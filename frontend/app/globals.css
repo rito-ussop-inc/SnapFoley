@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-base: #090a0f;
+  --color-panel: #131622;
+  --color-line: #1e2337;
+  --color-accent: #8b5cf6;
+  --color-highlight: #a855f7;
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  background: #090a0f;
+}
+
+body {
+  background: #090a0f;
+  color: #e4e4e7;
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
+/* Thin scrollbars for DAW panels */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e2337 transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e2337;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Range sliders */
+input[type="range"] {
+  cursor: pointer;
+}
