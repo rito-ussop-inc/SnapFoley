@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { Pause, Play, SkipBack, SkipForward, Film } from "lucide-react";
+import { Film, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useFoleyStore } from "@/store/useFoleyStore";
 import { audioEngine } from "@/lib/audio/AudioEngine";
 import { toTimecode } from "@/lib/types";
@@ -86,18 +86,21 @@ export function VideoPlayer({ videoRef, onTimeUpdate }: VideoPlayerProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-zinc-200">
-          <Film size={14} className="text-accent" /> VIDEO PREVIEW
-        </h2>
-        <div className="font-mono text-xs tabular-nums text-zinc-300">
+    <section className="card p-3 sm:p-4">
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <div>
+          <p className="kicker">Monitor</p>
+          <h2 className="mt-1 font-serif text-[15px] font-semibold tracking-tight text-ink">
+            Video preview
+          </h2>
+        </div>
+        <div className="text-right font-mono text-[11px] tabular-nums">
           <span className="text-accent">{toTimecode(currentTime)}</span>
-          <span className="text-zinc-500"> / {toTimecode(videoDuration)}</span>
+          <span className="text-faint"> / {toTimecode(videoDuration)}</span>
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-lg border border-line bg-black">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-base">
         {videoUrl ? (
           <video
             ref={videoRef}
@@ -137,32 +140,40 @@ export function VideoPlayer({ videoRef, onTimeUpdate }: VideoPlayerProps) {
             }}
           />
         ) : (
-          <div className="flex aspect-video w-full items-center justify-center bg-base text-center text-sm text-zinc-500">
-            No video loaded — pick a demo preset or upload a file.
+          <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-base text-center">
+            <Film size={22} className="text-faint" />
+            <p className="text-sm text-muted">No video loaded</p>
+            <p className="text-[11px] text-faint">Pick a demo preset or upload a file.</p>
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="mt-3 flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => step(-1 / 24)}
-          className="rounded-md border border-line p-2 text-zinc-200 hover:border-accent"
+          className="btn h-9 px-2"
           aria-label="Step back one frame"
+          title="Step back one frame"
         >
           <SkipBack size={14} />
         </button>
         <button
+          type="button"
           onClick={toggle}
           disabled={!videoUrl}
-          className="flex h-9 w-12 items-center justify-center rounded-md bg-accent text-white hover:bg-highlight disabled:opacity-50"
+          className="btn btn-primary h-9 w-11 px-0"
           aria-label={isPlaying ? "Pause" : "Play"}
+          title={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause size={16} /> : <Play size={16} />}
         </button>
         <button
+          type="button"
           onClick={() => step(1 / 24)}
-          className="rounded-md border border-line p-2 text-zinc-200 hover:border-accent"
+          className="btn h-9 px-2"
           aria-label="Step forward one frame"
+          title="Step forward one frame"
         >
           <SkipForward size={14} />
         </button>
@@ -174,13 +185,13 @@ export function VideoPlayer({ videoRef, onTimeUpdate }: VideoPlayerProps) {
           step={0.042}
           defaultValue={0}
           onChange={(e) => seekTo(Number(e.target.value))}
-          className="min-w-0 flex-1 accent-[#8B5CF6]"
+          className="mx-1 min-w-0 flex-1"
           aria-label="Seek through video"
         />
-        <span className="hidden font-mono text-[11px] text-zinc-500 sm:block">
-          {currentTime.toFixed(3)}s
+        <span className="hidden w-[74px] shrink-0 text-right font-mono text-[10px] text-faint sm:block">
+          {currentTime.toFixed(2)}s
         </span>
       </div>
-    </div>
+    </section>
   );
 }

@@ -13,7 +13,9 @@ export function usePlaybackClock(
   isPlaying: boolean,
 ) {
   const cbRef = useRef(onTime);
-  cbRef.current = onTime;
+  useEffect(() => {
+    cbRef.current = onTime;
+  }, [onTime]);
 
   useEffect(() => {
     const video = videoRef.current;

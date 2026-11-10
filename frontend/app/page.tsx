@@ -15,7 +15,7 @@ import {
 } from "@/mock/demoManifest";
 import { downloadEdl } from "@/lib/export/edlExporter";
 import { downloadStemsZip } from "@/lib/export/zipExporter";
-import type { FoleyCue, FoleyManifest } from "@/lib/types";
+import type { FoleyCue } from "@/lib/types";
 import { Upload, AlertTriangle, X } from "lucide-react";
 
 export default function Home() {
@@ -24,13 +24,11 @@ export default function Home() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const store = useFoleyStore;
   const {
-    videoUrl,
     cues,
     setVideo,
     setCues,
     loadManifest,
     setPlaying,
-    isPlaying,
     setStatus,
     setError,
     setBackendOnline,
@@ -43,6 +41,7 @@ export default function Home() {
     updateCue,
     deleteCue,
     selectedCueId,
+    videoDuration,
   } = store();
 
   const seekTo = useCallback((t: number) => {
@@ -127,7 +126,7 @@ export default function Home() {
       };
       probe.src = url;
     },
-    [setVideo, setActivePreset, setDemoMode, setStatus, setError, setCues],
+    [store, setVideo, setActivePreset, setDemoMode, setStatus, setError, setCues],
   );
 
   // Drag & drop
@@ -177,10 +176,7 @@ export default function Home() {
     try {
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 15000);
-      let res: Response;
-      // Decide: if we have an uploaded file on disk we can't send blob; send videoId hint.
-      // Backend accepts either a multipart file (when run from CLI) or a videoId for samples.
-      res = await fetch(`${BACKEND_BASE}/api/analyze-video`, {
+      const res = await fetch(`${BACKEND_BASE}/api/analyze-video`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ videoId: state.videoId, videoUrl: state.videoUrl }),
@@ -252,7 +248,7 @@ export default function Home() {
       setBackendOnline(false);
     }
     setAnalyzing(false);
-  }, [demoMode, activePreset, loadManifest, setAnalyzing, setError, setStatus, setBackendOnline, setCues]);
+  }, [store, demoMode, activePreset, loadManifest, setAnalyzing, setError, setStatus, setBackendOnline, setCues]);
 
   const handleRegenerate = useCallback(
     async (cueId: string, prompt: string, duration: number) => {
@@ -295,7 +291,7 @@ export default function Home() {
       const refreshed = store.getState().cues.find((c) => c.id === cueId);
       if (refreshed) await audioEngine.preview(refreshed);
     },
-    [demoMode, setStatus, updateCue],
+    [store, demoMode, setStatus, updateCue],
   );
 
   const handleExportEdl = useCallback(() => {
@@ -362,10 +358,10 @@ export default function Home() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedCueId, deleteCue, setPlaying]);
+  }, [store, selectedCueId, deleteCue, setPlaying]);
 
   return (
-    <div className="flex min-h-full flex-col bg-base text-zinc-100">
+    <div className="flex min-h-full flex-col text-ink">
       <Header
         onAnalyze={handleAnalyze}
         onExportEdl={handleExportEdl}
@@ -376,66 +372,127 @@ export default function Home() {
       />
 
       {uploadError && (
-        <div className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-          <span>{uploadError}</span>
-          <button
-            onClick={() => setUploadError(null)}
-            className="ml-auto"
-            aria-label="Dismiss upload error"
-          >
-            <X size={14} />
-          </button>
+        <div className="mx-auto mt-3 w-full max-w-[1600px] px-3 sm:px-4">
+          <div className="flex items-start gap-2 rounded-xl border border-danger/35 bg-danger/10 px-3 py-2 text-xs text-danger">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            <span className="flex-1">{uploadError}</span>
+            <button
+              onClick={() => setUploadError(null)}
+              className="shrink-0 text-danger/70 transition-colors hover:text-danger"
+              aria-label="Dismiss upload error"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
 
-      <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-3 p-3 xl:grid-cols-[420px_1fr_340px] lg:grid-cols-2">
-        <div className="flex flex-col gap-3">
+      <main className="mx-auto w-full max-w-[1200px] flex-1 px-3 pb-8 sm:px-6">
+        {/* Hero — a single centred statement, the way a composer prompt leads a page. */}
+        <section className="relative isolate flex flex-col items-center pt-9 text-center sm:pt-14">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-28 -z-10 h-[440px] bg-[radial-gradient(46rem_24rem_at_50%_0%,var(--sf-glow-a),transparent_72%)]"
+          />
+          <p className="kicker">Four-track Foley stage · 24 fps</p>
+          <h2 className="mt-3 max-w-[24ch] text-balance font-serif text-[30px] font-semibold leading-[1.06] tracking-tight text-ink sm:text-[44px] lg:text-[52px]">
+            Make the picture sound <span className="text-accent">like it feels.</span>
+          </h2>
+          <p className="mt-3.5 max-w-[54ch] text-[12.5px] leading-relaxed text-muted sm:text-sm">
+            Load a clip, spot the moments that carry weight, and shape every take across four
+            tracks — then hand your editor a clean EDL and stems.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 font-mono text-[10px] text-faint">
+            <span>{cues.length} cues</span>
+            <span className="text-line-strong">/</span>
+            <span>{videoDuration.toFixed(1)}s programme</span>
+            <span className="text-line-strong">/</span>
+            <span>demo assets cached</span>
+          </div>
+        </section>
+
+        {/* Monitor first, then the stage panel underneath it. */}
+        <div className="mt-7 grid gap-3 sm:mt-9 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,396px)] lg:items-start">
           <VideoPlayer videoRef={videoRef} onTimeUpdate={() => {}} />
-          <div className="rounded-xl border border-line bg-panel p-3 text-[11px] leading-relaxed text-zinc-400">
-            <p className="font-semibold text-zinc-200">How to use</p>
-            <ol className="mt-1 list-decimal space-y-1 pl-4">
-              <li>Pick a demo preset or drag-and-drop a .mp4/.mov (≤50 MB).</li>
-              <li>Click <span className="text-zinc-200">Analyze &amp; Spot Foley</span> to detect cues.</li>
-              <li>Drag cue blocks on the timeline; edit prompt / volume / pan on the right.</li>
-              <li>Preview with Space. Export EDL or Stems ZIP for your NLE.</li>
-            </ol>
-            <p className="mt-2 text-zinc-500">
-              Shortcuts: <span className="text-zinc-300">Space</span> play/pause •{" "}
-              <span className="text-zinc-300">J/K/L</span> shuttle •{" "}
-              <span className="text-zinc-300">Delete</span> remove cue.
-            </p>
-          </div>
+          <CueInspector onRegenerate={handleRegenerate} />
         </div>
 
-        <div className="flex flex-col gap-3 lg:col-span-1 xl:col-span-1">
+        <div className="mt-3 sm:mt-4">
           <Timeline onSeek={seekTo} />
-          <div className="hidden rounded-xl border border-line bg-panel p-3 text-[11px] text-zinc-400 xl:block">
-            <p className="font-semibold text-zinc-200">Acceptance checks</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-4">
-              <li>Scrubbing moves the playhead with the video clock.</li>
-              <li>Dragging a cue updates its scheduled start without reload.</li>
-              <li>Pause / seek use 5 ms ramps — no clicks.</li>
-              <li>EDL validates at 24 fps SMPTE.</li>
-            </ul>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-3 lg:col-span-2 xl:col-span-1">
-          <CueInspector videoRef={videoRef} onRegenerate={handleRegenerate} />
+        <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 md:grid-cols-2">
+          <section className="card-quiet p-4">
+            <p className="kicker">Guide</p>
+            <h2 className="mt-1 font-serif text-[15px] font-semibold tracking-tight text-ink">
+              How it works
+            </h2>
+            <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-[11px] leading-relaxed text-muted">
+              <li>Pick a demo preset or drag in an .mp4/.mov (≤ 50 MB).</li>
+              <li>
+                Press <span className="text-ink">Analyze &amp; Spot Foley</span> to detect cue
+                moments.
+              </li>
+              <li>Drag the blocks on the timeline, then tune prompt, volume and pan.</li>
+              <li>Audition with Space and export an EDL or stems ZIP for your editor.</li>
+            </ol>
+            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+              {[
+                ["Space", "play / pause"],
+                ["J K L", "shuttle"],
+                ["Del", "remove cue"],
+              ].map(([key, action]) => (
+                <span
+                  key={key}
+                  className="inline-flex items-center gap-1 rounded-md border border-line bg-panel px-1.5 py-1 text-[10px] text-faint"
+                >
+                  <kbd className="font-mono text-[10px] text-ink">{key}</kbd>
+                  {action}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="card-quiet p-4">
+            <p className="kicker">Quality checks</p>
+            <h2 className="mt-1 font-serif text-[15px] font-semibold tracking-tight text-ink">
+              Frame-accurate by design
+            </h2>
+            <ul className="mt-2 space-y-1.5 text-[11px] text-muted">
+              {[
+                "Scrubbing moves the playhead with the video clock.",
+                "Dragging a cue updates its start without a reload.",
+                "Pause and seek use 5 ms ramps — no clicks.",
+                "EDL exports validate at 24 fps SMPTE.",
+              ].map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </main>
 
-      <footer className="border-t border-line px-4 py-2 text-center text-[11px] text-zinc-500">
-        SnapFoley — browser DAW (Web Audio) + FastAPI + Gemini vision + ElevenLabs SFX. Demo Mode works without any API keys.
+      <footer className="border-t border-line px-4 py-4 text-center text-[11px] text-faint">
+        <p>
+          SnapFoley — a browser Foley desk built on Web Audio, FastAPI, Gemini vision and
+          ElevenLabs SFX.
+        </p>
+        <p className="mt-1 text-faint/80">
+          Demo mode runs entirely on cached assets, no API keys required.
+        </p>
       </footer>
 
       {dragOver && (
-        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-panel px-10 py-8 text-center">
-            <Upload size={28} className="text-accent" />
-            <p className="text-sm font-semibold text-white">Drop your .mp4 / .mov</p>
-            <p className="text-xs text-zinc-400">Max 50 MB • up to 60 s</p>
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-panel px-10 py-8 text-center shadow-2xl">
+            <Upload size={26} className="text-accent" />
+            <p className="font-serif text-lg font-semibold text-ink">
+              Drop your .mp4 / .mov
+            </p>
+            <p className="text-xs text-muted">Max 50 MB • up to 60 s</p>
           </div>
         </div>
       )}

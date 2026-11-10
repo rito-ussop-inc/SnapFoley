@@ -1,17 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { VolumeX } from "lucide-react";
 import type { FoleyCue } from "@/lib/types";
 import { useFoleyStore } from "@/store/useFoleyStore";
-import { audioEngine } from "@/lib/audio/AudioEngine";
-
-const TRACK_COLORS = ["#38bdf8", "#8B5CF6", "#A855F7", "#f59e0b"];
 
 interface CueBlockProps {
   cue: FoleyCue;
   totalDuration: number;
-  trackHeight?: number;
   peaks: number[];
 }
 
@@ -20,31 +16,9 @@ export function CueBlock({ cue, totalDuration, peaks }: CueBlockProps) {
   const selected = selectedCueId === cue.id;
   const ref = useRef<HTMLDivElement>(null);
   const [dragX, setDragX] = useState<number | null>(null);
-  const [peaksLocal, setPeaksLocal] = useState<number[]>(peaks);
-
-  useEffect(() => {
-    if (peaks.length > 0) setPeaksLocal(peaks);
-  }, [peaks]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (peaksLocal.length === 0) {
-        const buf = await audioEngine.getBuffer(cue);
-        if (buf && !cancelled) {
-          setPeaksLocal(audioEngine.getPeaks(cue, 48));
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cue.id, cue.audioUrl]);
 
   const leftPct = (cue.timestamp / totalDuration) * 100;
   const widthPct = Math.max((cue.duration / totalDuration) * 100, 1.2);
-  const color = TRACK_COLORS[cue.trackIndex] ?? "#8B5CF6";
   const displayLeft = dragX !== null ? `${dragX}%` : `${leftPct}%`;
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -80,6 +54,9 @@ export function CueBlock({ cue, totalDuration, peaks }: CueBlockProps) {
   return (
     <div
       ref={ref}
+      data-cue-block
+      data-selected={selected}
+      data-muted={!!cue.isMuted}
       role="button"
       tabIndex={0}
       aria-label={`Cue ${cue.id}`}
@@ -91,74 +68,51 @@ export function CueBlock({ cue, totalDuration, peaks }: CueBlockProps) {
           setSelectedCueId(cue.id);
         }
       }}
-      className={`group absolute top-1 bottom-1 cursor-grab rounded-md border px-1 py-0.5 active:cursor-grabbing ${
-        selected
-          ? "z-20 border-white shadow-[0_0_14px_rgba(168,85,247,0.55)]"
-          : "z-10 border-white/20 hover:border-white/50"
-      } ${cue.isMuted ? "opacity-50" : ""}`}
-      style={{
-        left: displayLeft,
-        width: `${widthPct}%`,
-        minWidth: 26,
-        background: `linear-gradient(180deg, ${color}55, ${color}33)`,
-        touchAction: "none",
-      }}
+      className="cue-block"
+      style={
+        {
+          "--cue": `var(--track-${cue.trackIndex})`,
+          left: displayLeft,
+          width: `${widthPct}%`,
+          minWidth: 28,
+        } as React.CSSProperties
+      }
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col px-1.5 py-1">
         <div className="flex items-center gap-1 overflow-hidden">
           <span
             className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: color }}
+            style={{ background: "var(--cue)" }}
           />
-          <span className="truncate text-[9px] font-medium text-white/90">
+          <span className="truncate text-[9px] font-semibold tracking-wide text-ink/85">
             {cue.category}
           </span>
-          {cue.isMuted && <VolumeX size={9} className="shrink-0 text-white/70" />}
-          <span className="ml-auto hidden font-mono text-[8px] text-white/60 group-[.min-w-[80px]]:block">
+          {cue.isMuted && <VolumeX size={9} className="shrink-0 text-ink/60" />}
+          <span className="ml-auto hidden shrink-0 font-mono text-[8px] text-ink/55 min-[900px]:block">
             {cue.timestamp.toFixed(2)}s
           </span>
         </div>
-        <Waveform peaks={peaksLocal} color={color} selected={selected} />
+        <Waveform peaks={peaks} />
       </div>
     </div>
   );
 }
 
-function Waveform({
-  peaks,
-  color,
-  selected,
-}: {
-  peaks: number[];
-  color: string;
-  selected: boolean;
-}) {
+function Waveform({ peaks }: { peaks: number[] }) {
   if (peaks.length === 0) {
     // Placeholder shimmer until decoded.
     return (
-      <div className="mt-0.5 flex flex-1 items-center gap-px overflow-hidden">
+      <div className="cue-wave mt-1 flex-1">
         {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="w-px bg-white/30"
-            style={{ height: `${30 + ((i * 37) % 50)}%` }}
-          />
+          <span key={i} style={{ height: `${30 + ((i * 37) % 50)}%` }} />
         ))}
       </div>
     );
   }
   return (
-    <div className="mt-0.5 flex flex-1 items-center gap-px overflow-hidden">
+    <div className="cue-wave mt-1 flex-1">
       {peaks.map((p, i) => (
-        <div
-          key={i}
-          className="min-w-px flex-1"
-          style={{
-            height: `${Math.max(8, p * 100)}%`,
-            background: selected ? "#ffffff" : color,
-            opacity: 0.75,
-          }}
-        />
+        <span key={i} style={{ height: `${Math.max(8, p * 100)}%` }} />
       ))}
     </div>
   );

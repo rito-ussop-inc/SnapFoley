@@ -5,15 +5,16 @@ import {
   AudioWaveform,
   Download,
   FileAudio,
+  Loader2,
+  RefreshCw,
+  Repeat,
   Upload,
   Wand2,
-  Loader2,
-  Repeat,
-  RefreshCw,
   Zap,
 } from "lucide-react";
 import { useFoleyStore } from "@/store/useFoleyStore";
 import { DEMO_VIDEO_PRESETS } from "@/mock/demoManifest";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   onAnalyze: () => void;
@@ -47,145 +48,194 @@ export function Header({
   } = useFoleyStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const backendLabel =
+    backendOnline === null ? "Checking" : backendOnline ? "Online" : "Offline";
+
   return (
-    <header className="border-b border-line bg-panel">
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent">
-            <AudioWaveform size={20} />
+    <header className="top-0 z-40 border-b border-line bg-panel/85 backdrop-blur-md sm:sticky">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-2.5 sm:px-4">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-line bg-panel2 text-accent">
+              <AudioWaveform size={18} strokeWidth={2.2} />
+            </div>
+            <div className="leading-none">
+              <h1 className="font-serif text-[19px] font-semibold tracking-tight text-ink">
+                SnapFoley<span className="text-accent">.</span>
+              </h1>
+              <p className="kicker mt-1.5">Foley studio</p>
+            </div>
           </div>
-          <div className="leading-tight">
-            <h1 className="text-sm font-bold tracking-wide text-white">
-              SnapFoley
-            </h1>
-            <p className="text-[11px] text-zinc-400">
-              AI Foley &amp; Multi-Track Sound Design Studio
-            </p>
-          </div>
-        </div>
 
-        <div className="hidden h-6 w-px bg-line md:block" />
+          <div className="mx-1 hidden h-7 w-px bg-line md:block" />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="Demo video preset"
-            value={activePreset === "demo1" || activePreset === "demo2" ? activePreset : ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === "demo1" || v === "demo2") onSelectPreset(v);
-            }}
-            className="rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-accent"
-          >
-            <option value="" disabled>Demo videos</option>
-            {DEMO_VIDEO_PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".mp4,.mov,video/mp4,video/quicktime"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onUploadFile(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-md border border-line bg-base px-2.5 py-1.5 text-xs text-zinc-200 hover:border-accent hover:text-white"
-          >
-            <Upload size={13} /> Upload .mp4/.mov
-          </button>
-
-          <button
-            onClick={onAnalyze}
-            disabled={isAnalyzing}
-            className="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-highlight disabled:opacity-60"
-          >
-            {isAnalyzing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
-            {isAnalyzing ? "Analyzing..." : "Analyze & Spot Foley"}
-          </button>
-
-          <button
-            onClick={() => setLoop(!loopEnabled)}
-            aria-pressed={loopEnabled}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs ${
-              loopEnabled
-                ? "border-accent bg-accent/15 text-white"
-                : "border-line bg-base text-zinc-300"
-            }`}
-          >
-            <Repeat size={13} /> Loop
-          </button>
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full border border-line bg-base px-2.5 py-1 text-[11px] text-zinc-300">
-            <span
-              className={`inline-block h-2 w-2 rounded-full ${
-                backendOnline === true
-                  ? "bg-emerald-400"
-                  : backendOnline === false
-                    ? "bg-red-400"
-                    : "bg-zinc-500"
-              }`}
-            />
-            {backendOnline === null
-              ? "Backend: checking..."
-              : backendOnline
-                ? "Backend online"
-                : "Backend offline (demo fallback)"}
-            <button
-              onClick={onCheckBackend}
-              title="Re-check backend"
-              className="ml-1 text-accent hover:text-highlight"
-              aria-label="Re-check backend connection"
+          {/* Primary actions */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <select
+              aria-label="Demo video preset"
+              value={activePreset === "demo1" || activePreset === "demo2" ? activePreset : ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "demo1" || v === "demo2") onSelectPreset(v);
+              }}
+              className="field h-8 w-[132px] cursor-pointer py-0 sm:w-[178px]"
             >
-              <RefreshCw size={12} />
+              <option value="" disabled>
+                Demo videos
+              </option>
+              {DEMO_VIDEO_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".mp4,.mov,video/mp4,video/quicktime"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUploadFile(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="btn h-8"
+              title="Upload an .mp4 or .mov (max 50 MB)"
+            >
+              <Upload size={13} />
+              <span>Upload</span>
+              <span className="hidden sm:inline text-muted">.mp4/.mov</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
+              className="btn btn-primary h-8"
+            >
+              {isAnalyzing ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Wand2 size={13} />
+              )}
+              {isAnalyzing ? (
+                "Analyzing…"
+              ) : (
+                <>
+                  Analyze<span className="hidden sm:inline">&nbsp;&amp; Spot Foley</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLoop(!loopEnabled)}
+              aria-pressed={loopEnabled}
+              className={`btn h-8 ${loopEnabled ? "btn-pressed" : ""}`}
+              title="Loop playback"
+            >
+              <Repeat size={13} />
+              <span className="hidden sm:inline">Loop</span>
             </button>
           </div>
 
-          <label className="flex items-center gap-1.5 text-[11px] text-zinc-300">
-            <input
-              type="checkbox"
-              checked={demoMode}
-              onChange={(e) => setDemoMode(e.target.checked)}
-              className="accent-[#8B5CF6]"
-            />
-            Demo Mode
-          </label>
+          {/* Right cluster */}
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <div
+              className="hidden h-8 items-center gap-1.5 rounded-[9px] border border-line bg-panel px-2 text-[11px] text-muted sm:flex"
+              title={
+                backendOnline === true
+                  ? "FastAPI backend reachable"
+                  : backendOnline === false
+                    ? "Backend offline — using cached demo assets"
+                    : "Checking backend connection…"
+              }
+            >
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${
+                  backendOnline === true
+                    ? "bg-emerald-500"
+                    : backendOnline === false
+                      ? "bg-danger"
+                      : "bg-faint"
+                }`}
+              />
+              <span className="hidden lg:inline">Backend&nbsp;</span>
+              {backendLabel}
+              <button
+                type="button"
+                onClick={onCheckBackend}
+                title="Re-check backend"
+                className="ml-0.5 text-faint transition-colors hover:text-accent"
+                aria-label="Re-check backend connection"
+              >
+                <RefreshCw size={11} />
+              </button>
+            </div>
 
-          <div className="hidden items-center gap-2 lg:flex">
-            <span className="text-[11px] text-zinc-500">
-              {cues.length} cues • {videoDuration.toFixed(1)}s
-            </span>
+            <label
+              className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] border px-2 text-[11px] transition-colors ${
+                demoMode
+                  ? "border-accent/50 bg-accent/10 text-ink"
+                  : "border-line bg-panel text-muted"
+              }`}
+              title="Demo mode uses cached cue manifests and audio"
+            >
+              <input
+                type="checkbox"
+                checked={demoMode}
+                onChange={(e) => setDemoMode(e.target.checked)}
+                className="h-3 w-3"
+              />
+              <span className="hidden sm:inline">Demo Mode</span>
+              <span className="sm:hidden">Demo</span>
+            </label>
+
+            <ThemeToggle />
+
+            <div className="mx-0.5 hidden h-7 w-px bg-line sm:block" />
+
+            <button
+              type="button"
+              onClick={onExportEdl}
+              disabled={cues.length === 0 || isExporting}
+              className="btn h-8"
+              title="Export a CMX 3600 EDL at 24 fps"
+            >
+              <FileAudio size={13} /> .EDL
+            </button>
+            <button
+              type="button"
+              onClick={onExportZip}
+              disabled={cues.length === 0 || isExporting}
+              className="btn btn-solid h-8"
+              title="Download stems, EDL and manifest as a ZIP"
+            >
+              {isExporting ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Download size={13} />
+              )}
+              <span className="hidden sm:inline">Stems ZIP</span>
+              <span className="sm:hidden">ZIP</span>
+            </button>
           </div>
-
-          <button
-            onClick={onExportEdl}
-            disabled={cues.length === 0 || isExporting}
-            className="flex items-center gap-1.5 rounded-md border border-line bg-base px-2.5 py-1.5 text-xs text-zinc-200 hover:border-accent disabled:opacity-50"
-          >
-            <FileAudio size={13} /> .EDL
-          </button>
-          <button
-            onClick={onExportZip}
-            disabled={cues.length === 0 || isExporting}
-            className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-black hover:bg-zinc-200 disabled:opacity-50"
-          >
-            {isExporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-            Stems ZIP
-          </button>
         </div>
-      </div>
-      <div className="flex items-center gap-2 border-t border-line px-4 py-1.5 text-[11px] text-zinc-400">
-        <Zap size={11} className="text-accent" />
-        <span>{statusMessage}</span>
+
+        {/* Status line */}
+        <div className="flex min-w-0 items-center gap-2 text-[11px] text-muted">
+          <Zap size={11} className="shrink-0 text-accent" />
+          <span className="truncate">{statusMessage}</span>
+          <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-faint sm:inline">
+            {cues.length} cues · {videoDuration.toFixed(1)}s
+          </span>
+        </div>
       </div>
     </header>
   );

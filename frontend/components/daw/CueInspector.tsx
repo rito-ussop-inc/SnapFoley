@@ -1,14 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Loader2,
-  Play,
-  RefreshCw,
-  Trash2,
-  VolumeX,
-  Volume2,
-} from "lucide-react";
+import { Loader2, Play, RefreshCw, Trash2, Volume2, VolumeX } from "lucide-react";
 import type { FoleyCategory } from "@/lib/types";
 import { categoryToTrack } from "@/lib/types";
 import { useFoleyStore, BACKEND_BASE } from "@/store/useFoleyStore";
@@ -22,35 +14,30 @@ const CATEGORIES: FoleyCategory[] = [
 ];
 
 interface CueInspectorProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
   onRegenerate: (cueId: string, prompt: string, duration: number) => Promise<void>;
 }
 
-export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
+export function CueInspector({ onRegenerate }: CueInspectorProps) {
   const { cues, selectedCueId, updateCue, deleteCue, isRegenerating, setRegenerating } =
     useFoleyStore();
   const cue = cues.find((c) => c.id === selectedCueId) ?? null;
-  const [localPrompt, setLocalPrompt] = useState("");
-
-  useEffect(() => {
-    setLocalPrompt(cue?.prompt ?? "");
-  }, [cue?.id, cue?.prompt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!cue) {
     return (
-      <div className="flex h-[300px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-panel px-6 text-center text-sm text-zinc-500">
-        <p className="font-medium text-zinc-300">No cue selected</p>
-        <p className="text-xs">
+      <section className="flex min-h-[300px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-panel/60 px-6 text-center">
+        <p className="font-serif text-[15px] font-semibold text-ink">No cue selected</p>
+        <p className="text-xs text-muted">
           Click a block on the timeline to edit its prompt, timing, volume and pan.
         </p>
-        <p className="text-[11px]">Tip: press Space to play/pause, Delete to remove.</p>
-      </div>
+        <p className="text-[11px] text-faint">
+          Tip: press Space to play/pause, Delete to remove.
+        </p>
+      </section>
     );
   }
 
   const handleRegenerate = async () => {
-    const prompt = localPrompt.trim() || cue.prompt;
-    updateCue(cue.id, { prompt });
+    const prompt = cue.prompt.trim() || cue.prompt;
     setRegenerating(true);
     try {
       await onRegenerate(cue.id, prompt, cue.duration);
@@ -65,17 +52,19 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-3">
+    <section className="card flex flex-col gap-3 p-3 sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="text-xs font-semibold tracking-wide text-zinc-200">
-            CUE INSPECTOR
+        <div className="min-w-0">
+          <p className="kicker">Inspector</p>
+          <h2 className="mt-1 font-serif text-[15px] font-semibold tracking-tight text-ink">
+            Cue details
           </h2>
-          <p className="font-mono text-[11px] text-accent">{cue.id}</p>
+          <p className="mt-1 truncate font-mono text-[10px] text-accent">{cue.id}</p>
         </div>
         <button
+          type="button"
           onClick={handlePreview}
-          className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-zinc-200 hover:border-accent"
+          className="btn h-8 shrink-0 px-2"
           title="Audition this cue now"
         >
           <Play size={12} /> Preview
@@ -83,34 +72,33 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-[11px] font-medium text-zinc-400">
-          Acoustic prompt
-        </span>
+        <span className="kicker mb-1.5 block">Acoustic prompt</span>
         <textarea
-          value={localPrompt}
-          onChange={(e) => setLocalPrompt(e.target.value)}
+          value={cue.prompt}
+          onChange={(e) => updateCue(cue.id, { prompt: e.target.value })}
           rows={3}
-          className="w-full resize-none rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-accent"
+          className="field resize-none leading-relaxed"
           placeholder="Describe the sound physically…"
         />
       </label>
 
       <button
+        type="button"
         onClick={handleRegenerate}
         disabled={isRegenerating}
-        className="flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-white hover:bg-highlight disabled:opacity-60"
+        className="btn btn-primary w-full py-2"
       >
         {isRegenerating ? (
           <Loader2 size={14} className="animate-spin" />
         ) : (
           <RefreshCw size={14} />
         )}
-        {isRegenerating ? "Regenerating take..." : "Regenerate Take"}
+        {isRegenerating ? "Regenerating take…" : "Regenerate take"}
       </button>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
-          <span className="mb-1 block text-[11px] text-zinc-400">Category</span>
+          <span className="kicker mb-1.5 block">Category</span>
           <select
             value={cue.category}
             onChange={(e) => {
@@ -120,7 +108,7 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
                 trackIndex: categoryToTrack(cat),
               });
             }}
-            className="w-full rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-accent"
+            className="field cursor-pointer"
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -130,25 +118,23 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-[11px] text-zinc-400">Track</span>
+          <span className="kicker mb-1.5 block">Track</span>
           <select
             value={cue.trackIndex}
-            onChange={(e) =>
-              updateCue(cue.id, { trackIndex: Number(e.target.value) })
-            }
-            className="w-full rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-accent"
+            onChange={(e) => updateCue(cue.id, { trackIndex: Number(e.target.value) })}
+            className="field cursor-pointer"
           >
-            <option value={0}>0 Atmosphere</option>
-            <option value={1}>1 Footsteps</option>
-            <option value={2}>2 Foley/Props</option>
-            <option value={3}>3 Impacts</option>
+            <option value={0}>0 · Atmosphere</option>
+            <option value={1}>1 · Footsteps</option>
+            <option value={2}>2 · Foley/Props</option>
+            <option value={3}>3 · Impacts</option>
           </select>
         </label>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
-          <span className="mb-1 block text-[11px] text-zinc-400">Start (s)</span>
+          <span className="kicker mb-1.5 block">Start (s)</span>
           <input
             type="number"
             min={0}
@@ -157,11 +143,11 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
             onChange={(e) =>
               updateCue(cue.id, { timestamp: Math.max(0, Number(e.target.value) || 0) })
             }
-            className="w-full rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-accent"
+            className="field font-mono"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[11px] text-zinc-400">Duration (s)</span>
+          <span className="kicker mb-1.5 block">Duration (s)</span>
           <input
             type="number"
             min={0.2}
@@ -173,76 +159,82 @@ export function CueInspector({ videoRef, onRegenerate }: CueInspectorProps) {
                 duration: Math.max(0.2, Math.min(3, Number(e.target.value) || 0.2)),
               })
             }
-            className="w-full rounded-md border border-line bg-base px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-accent"
+            className="field font-mono"
           />
         </label>
       </div>
 
-      <label className="block">
-        <span className="mb-1 flex items-center justify-between text-[11px] text-zinc-400">
-          <span>Volume</span>
-          <span className="font-mono text-zinc-200">{Math.round(cue.volume * 100)}%</span>
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={1.5}
-          step={0.01}
-          value={cue.volume}
-          onChange={(e) => updateCue(cue.id, { volume: Number(e.target.value) })}
-          className="w-full accent-[#8B5CF6]"
-        />
-      </label>
-
-      <label className="block">
-        <span className="mb-1 flex items-center justify-between text-[11px] text-zinc-400">
-          <span>Pan</span>
-          <span className="font-mono text-zinc-200">
-            {cue.pan < -0.05 ? "L" : cue.pan > 0.05 ? "R" : "C"}{" "}
-            {cue.pan.toFixed(2)}
+      <div className="space-y-3 border-t border-line pt-3">
+        <label className="block">
+          <span className="mb-1 flex items-center justify-between">
+            <span className="kicker">Volume</span>
+            <span className="font-mono text-[11px] text-ink">
+              {Math.round(cue.volume * 100)}%
+            </span>
           </span>
-        </span>
-        <input
-          type="range"
-          min={-1}
-          max={1}
-          step={0.01}
-          value={cue.pan}
-          onChange={(e) => updateCue(cue.id, { pan: Number(e.target.value) })}
-          className="w-full accent-[#8B5CF6]"
-        />
-        <span className="flex justify-between text-[9px] text-zinc-500">
-          <span>Left 100%</span>
-          <span>Center</span>
-          <span>Right 100%</span>
-        </span>
-      </label>
+          <input
+            type="range"
+            min={0}
+            max={1.5}
+            step={0.01}
+            value={cue.volume}
+            onChange={(e) => updateCue(cue.id, { volume: Number(e.target.value) })}
+            className="w-full"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 flex items-center justify-between">
+            <span className="kicker">Pan</span>
+            <span className="font-mono text-[11px] text-ink">
+              {cue.pan < -0.05 ? "L" : cue.pan > 0.05 ? "R" : "C"}{" "}
+              {Math.abs(cue.pan).toFixed(2)}
+            </span>
+          </span>
+          <input
+            type="range"
+            min={-1}
+            max={1}
+            step={0.01}
+            value={cue.pan}
+            onChange={(e) => updateCue(cue.id, { pan: Number(e.target.value) })}
+            className="w-full"
+          />
+          <span className="flex justify-between font-mono text-[9px] text-faint">
+            <span>L 100</span>
+            <span>Center</span>
+            <span>R 100</span>
+          </span>
+        </label>
+      </div>
 
       <div className="flex gap-2">
         <button
+          type="button"
           onClick={() => updateCue(cue.id, { isMuted: !cue.isMuted })}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs ${
-            cue.isMuted
-              ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-              : "border-line text-zinc-200"
-          }`}
           aria-pressed={!!cue.isMuted}
+          className={`btn flex-1 ${
+            cue.isMuted
+              ? "border-warm/50 bg-warm/10 text-warm"
+              : ""
+          }`}
         >
           {cue.isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
           {cue.isMuted ? "Muted" : "Mute"}
         </button>
         <button
+          type="button"
           onClick={() => deleteCue(cue.id)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs text-red-200 hover:bg-red-500/20"
+          className="btn flex-1 border-danger/40 bg-danger/10 text-danger hover:border-danger/70 hover:bg-danger/15"
         >
           <Trash2 size={13} /> Delete
         </button>
       </div>
 
-      <p className="text-[10px] leading-relaxed text-zinc-500">
-        Backend: <span className="font-mono">{BACKEND_BASE}</span> — regenerate falls back
-        to the cached mock take if the backend is offline.
+      <p className="border-t border-line pt-2 text-[10px] leading-relaxed text-faint">
+        Backend <span className="font-mono text-muted">{BACKEND_BASE}</span> — regenerate
+        falls back to the cached take when the backend is offline.
       </p>
-    </div>
+    </section>
   );
 }
